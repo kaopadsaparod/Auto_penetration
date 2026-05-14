@@ -1,0 +1,52 @@
+# ============================================================
+# AI Pentesting Agent — Configuration
+# ============================================================
+# This file is the FIRST safety check. The agent reads this
+# before executing any command. Edit carefully.
+# ============================================================
+
+target:
+  ip: "10.10.10.x"                          # Primary target IP
+  allowed_ips: ["10.10.10.0/24"]            # CIDR — agent CANNOT touch IPs outside this
+  allowed_ports: [22, 80, 443, 8080, 8443, 3306, 5432, 21, 25, 110, 139, 445, 3389]
+
+budget:
+  max_tokens_per_run: 50000                 # Hard kill switch for total tokens
+  max_api_calls: 20                         # Paid API calls only (Gemini)
+  max_iterations: 15                        # Max ReAct loop cycles
+
+safety:
+  require_human_approval: true              # HITL gate for exploit execution
+  blocked_commands:                          # Never allow these patterns
+    - "rm -rf"
+    - "mkfs"
+    - "dd if="
+    - ":(){:|:&};:"
+    - "shutdown"
+    - "reboot"
+    - "format"
+    - "> /dev/sd"
+  destructive_keywords:                      # Commands containing these need HITL approval
+    - "exploit"
+    - "msfconsole"
+    - "reverse_tcp"
+    - "bind_tcp"
+    - "shell"
+    - "meterpreter"
+    - "sqlmap --os-shell"
+    - "upload"
+    - "wget http"
+    - "curl -o"
+  max_subprocess_timeout: 600               # Global timeout cap in seconds
+
+llm:
+  local_model: "llama3.1:8b"               # Ollama model for parsing/routing (FREE)
+  paid_model: "gemini-2.5-flash"            # Google Gemini for strategic reasoning (FREE tier)
+  ollama_host: "http://localhost:11434"      # Change to host.docker.internal in Docker
+  gemini_api_key_env: "GEMINI_API_KEY"      # Env var name holding your API key
+
+rag:
+  chroma_path: "./data/chroma"
+  embedding_model: "nomic-embed-text"       # Via Ollama — FREE
+  chunk_size: 500                           # Tokens per chunk
+  top_k: 3                                  # Results per query

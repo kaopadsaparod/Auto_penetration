@@ -1,0 +1,52 @@
+# ============================================================
+# AI Pentesting Agent — Git Ignore
+# ============================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime data (keep structure, ignore content)
+data/*.db
+data/*.log
+data/*.json
+data/chroma/
+
+# Logs
+*.log
+
+# Environment variables (NEVER commit API keys)
+.env
+.env.local
+.env.production
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Gemini
+.gemini/
