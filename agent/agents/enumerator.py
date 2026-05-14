@@ -8,16 +8,12 @@ import json
 import logging
 from typing import Any
 
-from agent.agents.llm_client import LLMClient
+from agent.agents.llm_client import LLMClient, load_prompt
 
 logger = logging.getLogger(__name__)
 
 
-PARSE_SYSTEM = (
-    "You are a cybersecurity expert analyzing penetration testing tool output. "
-    "Extract structured findings accurately. Be precise about versions, ports, "
-    "and service names. Output ONLY valid JSON."
-)
+
 
 
 def parse_scan_findings(llm: LLMClient, raw_output: str, tool_name: str) -> list[dict]:
@@ -41,15 +37,10 @@ def parse_scan_findings(llm: LLMClient, raw_output: str, tool_name: str) -> list
     if len(raw_output) > max_chars:
         truncated += f"\n... [truncated, {len(raw_output) - max_chars} chars omitted]"
 
-    prompt = (
-        f"Analyze this {tool_name} output and extract all findings as a JSON list.\n"
-        f"Each finding should have: type, detail, severity (low/medium/high/critical).\n"
-        f"Output ONLY a JSON array.\n\n"
-        f"--- {tool_name} output ---\n{truncated}"
-    )
+    prompt = load_prompt("enumerator_parse", tool_name=tool_name, output=truncated)
 
     try:
-        findings = llm.query_local_json(prompt, system=PARSE_SYSTEM)
+        findings = llm.query_local_json(prompt, system=load_prompt("enumerator_system"))
         if isinstance(findings, list):
             return findings
         elif isinstance(findings, dict):
@@ -75,17 +66,10 @@ def identify_services(llm: LLMClient, ports_data: list[dict]) -> list[dict]:
     if not ports_data:
         return []
 
-    prompt = (
-        "Given these discovered services, identify which ones may have "
-        "known vulnerabilities based on their version numbers. For each "
-        "service, return: service, version, potential_cves (list of CVE IDs "
-        "if version is known-vulnerable, else empty), risk_level.\n\n"
-        f"Services: {json.dumps(ports_data, indent=2)}\n\n"
-        "Output ONLY a JSON array."
-    )
+    prompt = load_prompt("enumerator_services", services_json=json.dumps(ports_data, indent=2))
 
     try:
-        return llm.query_local_json(prompt, system=PARSE_SYSTEM)
+        return llm.query_local_json(prompt, system=load_prompt("enumerator_system"))
     except Exception as e:
         logger.warning("Service identification failed: %s", e)
         return []

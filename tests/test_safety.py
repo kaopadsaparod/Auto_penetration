@@ -1,12 +1,8 @@
 """
 Tests for safety guardrails — scope guard, destructive detection, HITL.
 """
-import sys
 import pytest
-from pathlib import Path
 from unittest.mock import patch
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent.safety.guardrails import (
     extract_ips, is_destructive, is_blocked, is_in_scope, safety_check,

@@ -7,19 +7,13 @@ This is what makes it a true ReAct loop instead of just Act-Parse.
 import json
 import logging
 
-from agent.agents.llm_client import LLMClient
+from agent.agents.llm_client import LLMClient, load_prompt
 from agent.ptt import PentestNode
 
 logger = logging.getLogger(__name__)
 
 
-REASONER_SYSTEM = (
-    "You are a penetration testing expert reasoning about scan findings. "
-    "Evaluate what was found, what it implies for the target's security, "
-    "and what the next logical steps should be. Think step by step. "
-    "Consider: Is this a dead end? Is this interesting? Does this open "
-    "new attack vectors? Should we escalate to a more thorough scan?"
-)
+
 
 
 def reason_about_findings(
@@ -55,26 +49,16 @@ def reason_about_findings(
             "dead_end": True,
         }
 
-    prompt = (
-        f"Phase: {node.phase}\n"
-        f"Tool used: {node.tool_used}\n"
-        f"Command: {node.command_run}\n\n"
-        f"Findings:\n{json.dumps(findings, indent=2)}\n\n"
-        f"Analyze these findings and return a JSON object with:\n"
-        f'- "significance": "low"|"medium"|"high"|"critical"\n'
-        f'- "reasoning": brief explanation (1-2 sentences)\n'
-        f'- "escalate_to_paid": true if we need deeper AI analysis\n'
-        f'- "next_steps": list of objects, each with:\n'
-        f'    - "tool": tool name to use\n'
-        f'    - "action": what to do\n'
-        f'    - "phase": recon|enum|exploit|post\n'
-        f'    - "priority": 1-5 (1=highest)\n'
-        f'- "dead_end": true if this branch has no potential\n\n'
-        f"Output ONLY valid JSON."
+    prompt = load_prompt(
+        "reasoner_evaluate",
+        phase=node.phase,
+        tool_used=node.tool_used,
+        command_run=node.command_run,
+        findings_json=json.dumps(findings, indent=2),
     )
 
     try:
-        result = llm.query_local_json(prompt, system=REASONER_SYSTEM)
+        result = llm.query_local_json(prompt, system=load_prompt("reasoner_system"))
         if isinstance(result, dict):
             logger.info(
                 "Reasoning complete: significance=%s, %d next steps, escalate=%s",
@@ -128,13 +112,7 @@ def generate_next_nodes(
         phase = step.get("phase", "enum")
 
         # Generate the actual command using local LLM
-        cmd_prompt = (
-            f"Generate the exact CLI command for this pentesting action:\n"
-            f"Tool: {tool}\n"
-            f"Action: {action}\n"
-            f"Target IP: {target_ip}\n\n"
-            f"Output ONLY the command string, nothing else."
-        )
+        cmd_prompt = load_prompt("reasoner_command", tool=tool, action=action, target_ip=target_ip)
 
         try:
             command = llm.query_local(cmd_prompt).strip()

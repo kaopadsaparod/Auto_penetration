@@ -290,6 +290,14 @@ def react_loop(config: dict) -> dict:
                 budget_summary["paid_tokens"], budget_summary["api_calls"])
     logger.info("=" * 60)
 
+    # Generate HTML report if enabled
+    if config.get("report", {}).get("enabled", False):
+        try:
+            from agent.report.generator import generate_report
+            generate_report(config, ptt, llm)
+        except Exception as e:
+            logger.error("Report generation failed: %s", e)
+
     ptt.close()
     return summary
 

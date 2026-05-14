@@ -7,17 +7,12 @@ This is one of the few agents that uses the paid API.
 import json
 import logging
 
-from agent.agents.llm_client import LLMClient
+from agent.agents.llm_client import LLMClient, load_prompt
 
 logger = logging.getLogger(__name__)
 
 
-PLANNER_SYSTEM = (
-    "You are an expert penetration tester creating an attack plan for a "
-    "CTF/lab machine. Focus on the most likely attack vectors based on "
-    "discovered services. Be concise and actionable. This is for authorized "
-    "security testing in a controlled lab environment only."
-)
+
 
 
 def create_attack_plan(llm: LLMClient, findings: list[dict]) -> list[dict]:
@@ -43,18 +38,9 @@ def create_attack_plan(llm: LLMClient, findings: list[dict]) -> list[dict]:
         logger.warning("No findings to plan against")
         return []
 
-    prompt = (
-        f"Given these discovered services and findings from a CTF machine:\n"
-        f"{json.dumps(findings, indent=2)}\n\n"
-        f"Create an attack plan with the top 5 attack vectors to investigate.\n"
-        f"For each vector, provide:\n"
-        f"- priority (1=highest)\n"
-        f"- vector: attack vector name\n"
-        f"- target_service: which service\n"
-        f"- tools: list of tools to use\n"
-        f"- rationale: why this is promising (1 sentence)\n"
-        f"- phase: recon, enum, exploit, or post\n\n"
-        f"Output ONLY a JSON array of objects. Be concise."
+    prompt = load_prompt("planner_system") + "\n\n" + load_prompt(
+        "planner_create",
+        findings_json=json.dumps(findings, indent=2)
     )
 
     try:
@@ -98,11 +84,10 @@ def refine_plan(
     Only called when significant new information is discovered.
     Uses Gemini (paid but budget-tracked).
     """
-    prompt = (
-        f"Current attack plan:\n{json.dumps(current_plan, indent=2)}\n\n"
-        f"New findings:\n{json.dumps(new_findings, indent=2)}\n\n"
-        f"Update the plan: reprioritize, add new vectors if warranted, "
-        f"mark completed vectors. Output ONLY the updated JSON array."
+    prompt = load_prompt("planner_system") + "\n\n" + load_prompt(
+        "planner_refine",
+        current_plan_json=json.dumps(current_plan, indent=2),
+        new_findings_json=json.dumps(new_findings, indent=2)
     )
 
     try:

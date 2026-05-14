@@ -40,7 +40,7 @@ safety:
   max_subprocess_timeout: 600               # Global timeout cap in seconds
 
 llm:
-  local_model: "llama3.1:8b"               # Ollama model for parsing/routing (FREE)
+  local_model: "qwen3.5:4b"               # Ollama model for parsing/routing (FREE)
   paid_model: "gemini-2.5-flash"            # Google Gemini for strategic reasoning (FREE tier)
   ollama_host: "http://localhost:11434"      # Change to host.docker.internal in Docker
   gemini_api_key_env: "GEMINI_API_KEY"      # Env var name holding your API key
@@ -50,3 +50,8 @@ rag:
   embedding_model: "nomic-embed-text"       # Via Ollama — FREE
   chunk_size: 500                           # Tokens per chunk
   top_k: 3                                  # Results per query
+
+report:
+  enabled: true
+  output: data/report.html
+  use_gemini: false                          # Use local LLM for summary (FREE)

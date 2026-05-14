@@ -1,11 +1,7 @@
 """
 Tests for tool input validation and nmap XML parsing.
 """
-import sys
 import pytest
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent.tools.base import (
     ValidationError, validate_ip, validate_ports,

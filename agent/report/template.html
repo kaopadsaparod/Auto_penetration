@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penetration Test Report — {{ target_ip }}</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { color: #fff; }
+        
+        .header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-meta {
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background: rgba(16,185,129,0.2); color: var(--success); }
+        .badge-failed { background: rgba(239,68,68,0.2); color: var(--danger); }
+        .badge-pending { background: rgba(245,158,11,0.2); color: var(--warning); }
+        
+        .badge-critical { background: var(--danger); color: white; }
+        .badge-high { background: var(--warning); color: black; }
+        .badge-medium { background: var(--primary); color: white; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(0,0,0,0.2);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        pre {
+            background: #000;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            color: #a5b4fc;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .summary-text {
+            white-space: pre-wrap;
+            font-size: 1.1rem;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>AI Pentest Report</h1>
+                <h2>Target: <span style="color: var(--primary)">{{ target_ip }}</span></h2>
+            </div>
+            <div class="header-meta">
+                <div>Generated: {{ date }}</div>
+                <div>Status: Complete</div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value">{{ stats.total_nodes }}</div>
+                <div class="stat-label">Total Actions</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--success)">{{ stats.success }}</div>
+                <div class="stat-label">Successful</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--danger)">{{ stats.failed }}</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--warning)">{{ stats.total_tokens }}</div>
+                <div class="stat-label">Tokens Used</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Executive Summary</h2>
+            <div class="summary-text">{{ exec_summary }}</div>
+        </div>
+
+        {% if attack_plan %}
+        <div class="card">
+            <h2>Attack Vectors Discovered</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pri</th>
+                        <th>Target Service</th>
+                        <th>Vector</th>
+                        <th>Phase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vector in attack_plan %}
+                    <tr>
+                        <td>{{ vector.priority }}</td>
+                        <td><strong>{{ vector.target_service }}</strong></td>
+                        <td>{{ vector.vector }}<br><small style="color: var(--text-muted)">{{ vector.rationale }}</small></td>
+                        <td><span class="badge badge-pending">{{ vector.phase }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <h2>Detailed Timeline</h2>
+        
+        {% for phase in ['recon', 'enum', 'exploit', 'post'] %}
+        {% if nodes_by_phase[phase] %}
+        <div class="card">
+            <h3 style="text-transform: capitalize; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 0;">{{ phase }} Phase</h3>
+            
+            {% for node in nodes_by_phase[phase] %}
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>{{ node.tool_used }}</code></strong>
+                    <span class="badge badge-{{ node.status }}">{{ node.status }}</span>
+                </div>
+                
+                {% if node.command_run %}
+                <pre>{{ node.command_run }}</pre>
+                {% endif %}
+                
+                {% if node.findings %}
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    {% for f in node.findings %}
+                        <li>
+                            {% if f.severity or f.risk_level %}
+                            <span class="badge badge-{{ f.severity or f.risk_level }}">{{ f.severity or f.risk_level }}</span>
+                            {% endif %}
+                            {{ f.detail or f.vector or f }}
+                            {% if f.cve or f.potential_cves %}
+                            <strong style="color: var(--danger)">{{ f.cve or f.potential_cves }}</strong>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if node.error_message %}
+                <div style="color: var(--danger); margin-top: 1rem; padding: 1rem; background: rgba(239,68,68,0.1); border-left: 4px solid var(--danger);">
+                    {{ node.error_message }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+        
+    </div>
+</body>
+</html>

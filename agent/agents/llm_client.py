@@ -12,11 +12,25 @@ Key features:
 import json
 import logging
 import re
+import time
+import threading
+from pathlib import Path
 from typing import Any, Optional
 
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (
+    retry, stop_after_attempt, wait_exponential,
+    retry_if_exception_type, before_sleep_log,
+)
 
 logger = logging.getLogger(__name__)
+
+_PROMPT_DIR = Path(__file__).parent.parent / "prompts"
+
+def load_prompt(name: str, **kwargs) -> str:
+    """Load a prompt template from agent/prompts/{name}.md and format it."""
+    path = _PROMPT_DIR / f"{name}.md"
+    template = path.read_text(encoding="utf-8")
+    return template.format_map(kwargs) if kwargs else template
 
 
 # ════════════════════════════════════════════════════════════════
@@ -80,6 +94,91 @@ def extract_json(raw: str) -> Any:
         "Could not extract valid JSON from LLM response",
         raw, 0,
     )
+
+
+# ════════════════════════════════════════════════════════════════
+# 429 / Rate-limit exception matching
+# ════════════════════════════════════════════════════════════════
+
+def _is_rate_limit_error(exc: BaseException) -> bool:
+    """
+    Return True for HTTP 429 / rate-limit errors from any Google client.
+
+    Works with both google-genai and google-api-core exception hierarchies.
+    Falls back to checking the string representation so we don't need a
+    hard import on google.api_core at module level.
+    """
+    # google.api_core.exceptions.ResourceExhausted (gRPC 429)
+    try:
+        from google.api_core.exceptions import ResourceExhausted  # type: ignore
+        if isinstance(exc, ResourceExhausted):
+            return True
+    except ImportError:
+        pass
+
+    # google.genai.errors.ClientError (REST 429) — confirmed exception type
+    try:
+        from google.genai.errors import ClientError
+        if isinstance(exc, ClientError) and getattr(exc, 'status_code', 0) == 429:
+            return True
+    except ImportError:
+        pass
+
+    # Some SDK versions raise a plain Exception / ClientError with 429 in msg
+    msg = str(exc).lower()
+    if "429" in msg or "resource exhausted" in msg or "rate limit" in msg:
+        return True
+
+    return False
+
+
+def _retry_on_rate_limit_or_transient(exc: BaseException) -> bool:
+    """Tenacity retry predicate: retry on transient + 429 errors."""
+    if isinstance(exc, (ConnectionError, TimeoutError)):
+        return True
+    return _is_rate_limit_error(exc)
+
+
+# ════════════════════════════════════════════════════════════════
+# Soft rate limiter  (proactive guard before hard 429)
+# ════════════════════════════════════════════════════════════════
+
+class _RateLimiter:
+    """
+    Thread-safe sliding-window rate limiter.
+
+    Default: 15 requests per 60 seconds (Gemini free-tier limit).
+    Sleeps the caller if issuing the next request would exceed the budget.
+    """
+
+    def __init__(self, max_calls: int = 14, period: float = 60.0):
+        # Use 14 instead of 15 to leave a 1-call safety margin
+        self.max_calls = max_calls
+        self.period = period
+        self._timestamps: list[float] = []
+        self._lock = threading.Lock()
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            # Purge timestamps outside the sliding window
+            self._timestamps = [
+                t for t in self._timestamps if now - t < self.period
+            ]
+            if len(self._timestamps) >= self.max_calls:
+                oldest = self._timestamps[0]
+                sleep_for = self.period - (now - oldest) + 0.5  # +0.5s buffer
+                if sleep_for > 0:
+                    logger.info(
+                        "Rate limiter: sleeping %.1fs to stay under %d RPM",
+                        sleep_for, self.max_calls,
+                    )
+                    time.sleep(sleep_for)
+            self._timestamps.append(time.monotonic())
+
+
+# Module-level singleton so the limit is shared across LLMClient instances
+_gemini_rate_limiter = _RateLimiter()
 
 
 # ════════════════════════════════════════════════════════════════
@@ -266,9 +365,10 @@ class LLMClient:
     # ── Paid LLM (Gemini Flash — FREE TIER) ──────────────────
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=4, max=120),
+        retry=_retry_on_rate_limit_or_transient,
+        before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def query_paid(self, prompt: str, max_tokens: int = 800) -> str:
         """
@@ -290,6 +390,9 @@ class LLMClient:
                 f"Tokens: {self.tracker.paid_tokens}/{self.tracker.max_paid_tokens}, "
                 f"Calls: {self.tracker.api_calls}/{self.tracker.max_api_calls}"
             )
+
+        # ── Soft rate-limit guard ─────────────────────────────
+        _gemini_rate_limiter.wait()
 
         client = self._get_gemini()
         model = self.config["llm"]["paid_model"]

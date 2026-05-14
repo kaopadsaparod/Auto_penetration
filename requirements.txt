@@ -4,6 +4,7 @@
 # LLM clients
 ollama>=0.4.0                   # Local LLM via Ollama
 google-genai>=1.0.0             # Google Gemini API (free tier)
+google-api-core>=2.0.0          # 429 / ResourceExhausted exception types
 
 # RAG / Vector DB
 chromadb>=0.5.0                 # Local vector database
@@ -11,6 +12,7 @@ chromadb>=0.5.0                 # Local vector database
 # Config & utilities
 pyyaml>=6.0                     # YAML config loading
 tenacity>=8.0                   # Retry logic for LLM calls
+jinja2>=3.0                     # HTML report templating
 
 # Testing
 pytest>=7.0
