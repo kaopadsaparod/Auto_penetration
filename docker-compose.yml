@@ -25,16 +25,17 @@ services:
     stdin_open: true                  # For HITL approval prompts
     tty: true
 
-  # Optional: vulnerable target for local testing
-  # Uncomment to use DVWA as a test target
-  # target:
-  #   image: vulnerables/web-dvwa
-  #   container_name: pentest-target
-  #   ports:
-  #     - "8080:80"
-  #   networks:
-  #     pentest-net:
-  #       ipv4_address: 10.10.10.100
+  # Custom vulnerable target for local testing (VibeShop)
+  target:
+    build:
+      context: ./lab
+      dockerfile: Dockerfile
+    container_name: pentest-target
+    ports:
+      - "8080:80"
+    networks:
+      pentest-net:
+        ipv4_address: 10.10.10.100
 
 networks:
   pentest-net:

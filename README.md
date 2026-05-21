@@ -238,6 +238,7 @@ See [`config.yaml`](config.yaml) for all settings:
 - [x] RAG ingestion with HackTricks data (`python -m agent.rag.ingest --download`)
 - [x] HTML/PDF report generation (`xhtml2pdf` compliant dual reports)
 - [x] Target-based SQLite session partitioning (`data/ptt_{target_ip}.db`)
+- [x] Dynamic "VibeShop" local target lab for challenging E2E tests (`./lab`)
 - [ ] Live-fire testing against DVWA/HTB
 
 ---
