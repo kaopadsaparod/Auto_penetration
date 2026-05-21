@@ -5,7 +5,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-58%20passed-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-62%20passed-brightgreen.svg)](#testing)
 
 ---
 
@@ -15,7 +15,7 @@ A fully autonomous pentesting agent that uses a **Hybrid LLM architecture**:
 
 | Component | Model | Cost | Role |
 |-----------|-------|------|------|
-| **Local LLM (80%)** | `llama3.1:8b` via Ollama | **FREE** | Parsing, Routing, Reasoning |
+| **Local LLM (80%)** | `llama3.2:3b` via Ollama | **FREE** | Parsing, Routing, Reasoning (optimised for GTX 1650/4GB VRAM) |
 | **Cloud LLM (20%)** | `Gemini 2.5 Flash` (Free Tier) | **FREE** | Attack planning, Exploit generation |
 | **Embeddings** | `nomic-embed-text` via Ollama | **FREE** | RAG knowledge base |
 | **Vector DB** | ChromaDB (local) | **FREE** | Pentest knowledge storage |
@@ -86,13 +86,17 @@ Auto_penetration/
 │   │   └── shell_tool.py     # Generic command executor
 │   ├── safety/
 │   │   └── guardrails.py     # Scope guard, blocklist, HITL
+│   ├── report/
+│   │   └── generator.py      # Premium glassmorphic HTML + high-contrast PDF reports
 │   └── rag/
 │       ├── embedder.py       # ChromaDB + Ollama embeddings
 │       └── ingest.py         # HackTricks knowledge ingestion
 ├── tests/
 │   ├── test_ptt.py           # PTT CRUD + tree operations
 │   ├── test_safety.py        # Scope, blocklist, HITL tests
-│   └── test_tools.py         # Input validation + XML parsing
+│   ├── test_tools.py         # Input validation + XML parsing
+│   ├── test_rag.py           # Ingestion + Chroma query validation
+│   └── test_report.py        # Glassmorphic HTML + PDF rendering tests
 ├── config.yaml               # Agent configuration
 ├── Dockerfile                # Container with pentesting tools
 ├── docker-compose.yml        # Agent + optional target services
@@ -123,7 +127,7 @@ pip install -r requirements.txt
 ### 2. Pull Ollama Models (FREE)
 
 ```bash
-ollama pull llama3.1:8b
+ollama pull llama3.2:3b
 ollama pull nomic-embed-text
 ```
 
@@ -174,7 +178,7 @@ docker compose up --build
 # Run all tests
 python -m pytest tests/ -v
 
-# Expected: 58 tests passed (~2.3s)
+# Expected: 62 tests passed (~6.9s)
 ```
 
 Test coverage includes:
@@ -184,6 +188,8 @@ Test coverage includes:
 - Scope guard (CIDR matching)
 - Blocklist and destructive command detection
 - HITL approval flow
+- ChromaDB RAG context lookup and automated ingestion
+- Premium HTML and PDF report generation compatibility
 
 ---
 
@@ -228,11 +234,11 @@ See [`config.yaml`](config.yaml) for all settings:
 - [x] Hybrid LLM client (Ollama + Gemini)
 - [x] RAG infrastructure (ChromaDB + nomic-embed-text)
 - [x] Input validation and command injection prevention
-- [x] Comprehensive test suite (58 tests)
-- [ ] RAG ingestion with HackTricks data
+- [x] Comprehensive test suite (62 tests)
+- [x] RAG ingestion with HackTricks data (`python -m agent.rag.ingest --download`)
+- [x] HTML/PDF report generation (`xhtml2pdf` compliant dual reports)
+- [x] Target-based SQLite session partitioning (`data/ptt_{target_ip}.db`)
 - [ ] Live-fire testing against DVWA/HTB
-- [ ] HTML/PDF report generation
-- [ ] Multi-target session support
 
 ---
 
