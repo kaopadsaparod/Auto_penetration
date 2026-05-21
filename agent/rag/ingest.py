@@ -28,6 +28,7 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
     """
     Split text into chunks of roughly `chunk_size` tokens.
     Uses word boundaries and respects paragraph breaks.
+    Filters out extremely long words to prevent binary/base64 block embedding errors.
 
     Args:
         text: Full document text.
@@ -37,9 +38,13 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
     Returns:
         List of text chunks.
     """
+    # Split and clean words: filter out very long strings (base64, hex dumps, etc.)
     words = text.split()
+    words = [w for w in words if len(w) < 100]
+
     if len(words) <= chunk_size:
-        return [text] if text.strip() else []
+        cleaned_text = " ".join(words)
+        return [cleaned_text] if cleaned_text.strip() else []
 
     chunks = []
     start = 0
@@ -47,6 +52,9 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
         end = start + chunk_size
         chunk = " ".join(words[start:end])
         if chunk.strip():
+            # Cap character length to be completely safe against context window errors
+            if len(chunk) > 8000:
+                chunk = chunk[:8000]
             chunks.append(chunk)
         start = end - overlap
 
@@ -59,7 +67,7 @@ def ingest_markdown_directory(
     chunk_size: int = 500,
 ) -> int:
     """
-    Ingest all markdown files from a directory into RAG store.
+    Ingest all markdown files from a directory into RAG store in batches.
 
     Args:
         source_dir: Path to directory containing .md files.
@@ -78,6 +86,12 @@ def ingest_markdown_directory(
     logger.info("Found %d markdown files in %s", len(md_files), source_dir)
 
     total_chunks = 0
+    
+    # Accumulators for batching
+    batch_chunks = []
+    batch_metadatas = []
+    batch_ids = []
+    batch_size = 15
 
     for md_file in md_files:
         try:
@@ -89,26 +103,54 @@ def ingest_markdown_directory(
             if not chunks:
                 continue
 
-            # Generate deterministic IDs from content hash
-            ids = [
-                f"{md_file.stem}_{hashlib.md5(c.encode()).hexdigest()[:8]}"
-                for c in chunks
-            ]
-            metadatas = [
-                {"source": str(md_file), "file": md_file.name}
-                for _ in chunks
-            ]
+            for c in chunks:
+                chunk_id = f"{md_file.stem}_{hashlib.md5(c.encode()).hexdigest()[:8]}"
+                batch_chunks.append(c)
+                batch_metadatas.append({"source": str(md_file), "file": md_file.name})
+                batch_ids.append(chunk_id)
 
-            added = rag.add_documents(chunks, metadatas=metadatas, ids=ids)
-            total_chunks += added
-            logger.debug("Ingested %s: %d chunks", md_file.name, added)
+            if len(batch_chunks) >= batch_size:
+                added = rag.add_documents(batch_chunks, metadatas=batch_metadatas, ids=batch_ids)
+                total_chunks += added
+                logger.info("Batch added %d documents. Total ingested so far: %d", added, total_chunks)
+                batch_chunks = []
+                batch_metadatas = []
+                batch_ids = []
 
         except Exception as e:
-            logger.warning("Failed to ingest %s: %s", md_file, e)
+            logger.warning("Failed to process %s: %s", md_file, e)
+
+    # Ingest any remaining documents
+    if batch_chunks:
+        added = rag.add_documents(batch_chunks, metadatas=batch_metadatas, ids=batch_ids)
+        total_chunks += added
+        logger.info("Final batch added %d documents. Total: %d", added, total_chunks)
 
     logger.info("Ingestion complete: %d total chunks from %d files",
                 total_chunks, len(md_files))
     return total_chunks
+
+
+def download_and_extract_hacktricks() -> str:
+    """Download HackTricks master branch ZIP and extract it to data/hacktricks_docs."""
+    import requests
+    import zipfile
+    import io
+
+    url = "https://github.com/HackTricks-wiki/hacktricks/archive/refs/heads/master.zip"
+    dest_dir = Path("./data/hacktricks_docs")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Downloading HackTricks master ZIP from %s ...", url)
+    response = requests.get(url, timeout=120)
+    response.raise_for_status()
+
+    logger.info("Extracting ZIP contents...")
+    with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+        zip_ref.extractall(dest_dir)
+
+    logger.info("HackTricks successfully extracted to %s", dest_dir)
+    return str(dest_dir)
 
 
 def main():
@@ -120,8 +162,13 @@ def main():
     )
     parser.add_argument(
         "--source", "-s",
-        required=True,
+        required=False,
         help="Path to directory containing markdown files",
+    )
+    parser.add_argument(
+        "--download", "-d",
+        action="store_true",
+        help="Download latest HackTricks documentation ZIP automatically",
     )
     parser.add_argument(
         "--chunk-size", "-c",
@@ -131,10 +178,21 @@ def main():
 
     args = parser.parse_args()
 
+    if not args.source and not args.download:
+        parser.error("At least one of --source (-s) or --download (-d) is required")
+
     config = load_config()
     rag = RAGStore(config)
 
-    total = ingest_markdown_directory(args.source, rag, args.chunk_size)
+    source_dir = args.source
+    if args.download:
+        try:
+            source_dir = download_and_extract_hacktricks()
+        except Exception as e:
+            logger.critical("Failed to download and extract HackTricks: %s", e)
+            sys.exit(1)
+
+    total = ingest_markdown_directory(source_dir, rag, args.chunk_size)
 
     stats = rag.get_stats()
     print(f"\nIngestion complete!")

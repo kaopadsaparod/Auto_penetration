@@ -72,10 +72,12 @@ def generate_report(config: dict, ptt: PTTStore, llm: LLMClient) -> str:
         Path to the generated report.
     """
     report_config = config.get("report", {})
-    output_path = Path(report_config.get("output", "data/report.html"))
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_html_path = Path(report_config.get("output_html", report_config.get("output", "data/report.html")))
+    output_pdf_path = Path(report_config.get("output_pdf", "data/report.pdf"))
+    output_html_path.parent.mkdir(parents=True, exist_ok=True)
+    output_pdf_path.parent.mkdir(parents=True, exist_ok=True)
     
-    logger.info("Generating final HTML report...")
+    logger.info("Generating final report...")
     
     target_ip = config.get("target", {}).get("ip", "Unknown")
     stats = ptt.get_stats()
@@ -131,9 +133,45 @@ def generate_report(config: dict, ptt: PTTStore, llm: LLMClient) -> str:
             all_nodes=nodes,
         )
         
-        output_path.write_text(html_content, encoding="utf-8")
-        logger.info("Report saved to %s", output_path)
-        return str(output_path)
+        output_html_path.write_text(html_content, encoding="utf-8")
+        logger.info("HTML Report saved to %s", output_html_path)
+
+        # Check if PDF format is enabled
+        formats = report_config.get("formats", ["html", "pdf"])
+        if "pdf" in formats:
+            try:
+                from xhtml2pdf import pisa
+                logger.info("Generating PDF report...")
+                
+                # Resolve CSS variables to static hex values for xhtml2pdf compatibility
+                pdf_html = html_content
+                css_vars = {
+                    "var(--bg)": "#0f172a",
+                    "var(--surface)": "#1e293b",
+                    "var(--surface-hover)": "#334155",
+                    "var(--text)": "#f8fafc",
+                    "var(--text-muted)": "#94a3b8",
+                    "var(--primary)": "#3b82f6",
+                    "var(--success)": "#10b981",
+                    "var(--warning)": "#f59e0b",
+                    "var(--danger)": "#ef4444",
+                    "var(--border)": "#334155",
+                }
+                for var_name, hex_val in css_vars.items():
+                    pdf_html = pdf_html.replace(var_name, hex_val)
+                
+                with open(output_pdf_path, "wb") as pdf_file:
+                    pisa_status = pisa.CreatePDF(pdf_html, dest=pdf_file)
+                if pisa_status.err:
+                    logger.error("PDF generation failed with %d errors", pisa_status.err)
+                else:
+                    logger.info("PDF Report saved to %s", output_pdf_path)
+            except ImportError:
+                logger.warning("xhtml2pdf not installed — skipping PDF report generation")
+            except Exception as e:
+                logger.error("Failed to generate PDF report: %s", e)
+
+        return str(output_html_path)
         
     except Exception as e:
         logger.error("Template rendering failed: %s", e)

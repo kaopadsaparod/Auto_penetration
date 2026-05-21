@@ -384,6 +384,15 @@ class LLMClient:
         Raises:
             RuntimeError: If budget is exhausted.
         """
+        dry_run = self.config.get("safety", {}).get("dry_run", False)
+        api_key_env = self.config["llm"].get("gemini_api_key_env", "GEMINI_API_KEY")
+        import os
+        api_key = os.environ.get(api_key_env, "")
+
+        if dry_run or not api_key:
+            logger.info("Local fallback enabled (dry_run=%s, has_api_key=%s) — querying local model", dry_run, bool(api_key))
+            return self.query_local(prompt)
+
         if self.tracker.budget_exhausted:
             raise RuntimeError(
                 f"Paid API budget exhausted! "
@@ -422,6 +431,15 @@ class LLMClient:
 
     def query_paid_json(self, prompt: str, max_tokens: int = 800) -> Any:
         """Query Gemini and parse response as JSON."""
+        dry_run = self.config.get("safety", {}).get("dry_run", False)
+        api_key_env = self.config["llm"].get("gemini_api_key_env", "GEMINI_API_KEY")
+        import os
+        api_key = os.environ.get(api_key_env, "")
+
+        if dry_run or not api_key:
+            logger.info("Local fallback enabled for paid JSON query — querying local model in JSON format")
+            return self.query_local_json(prompt)
+
         json_prompt = (
             prompt + "\n\nRespond with ONLY valid JSON. "
             "No explanation, no markdown fences, just the JSON."

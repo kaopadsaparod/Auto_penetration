@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from agent.config import load_config, ConfigError
 from agent.logger import setup_logger
 from agent.ptt import PentestNode, PTTStore
+from agent.rag.embedder import RAGStore
 from agent.agents.llm_client import LLMClient
 from agent.agents.enumerator import parse_scan_findings, identify_services
 from agent.agents.planner import create_attack_plan
@@ -133,8 +134,13 @@ def react_loop(config: dict) -> dict:
     max_iterations = config["budget"]["max_iterations"]
 
     # Initialize components
-    ptt = PTTStore()
+    ptt = PTTStore(target_ip=target_ip)
     llm = LLMClient(config)
+    rag = None
+    try:
+        rag = RAGStore(config)
+    except Exception as e:
+        logger.warning("RAGStore initialization failed: %s", e)
     attack_plan = []
 
     # Seed initial recon if this is a fresh run
@@ -229,11 +235,24 @@ def react_loop(config: dict) -> dict:
             if should_attempt_exploit(findings):
                 logger.info("CVE/vuln match found — generating exploit plan")
                 for f in findings:
+                    service = f.get("service", "unknown")
+                    version = f.get("version", "")
+                    cve = f.get("cve", None)
+
+                    # Retrieve RAG context if database is initialized
+                    rag_context = ""
+                    if rag:
+                        if cve:
+                            rag_context = rag.get_context_for_cve(cve)
+                        if not rag_context and service:
+                            rag_context = rag.get_context_for_service(service, version)
+
                     exploit_plan = generate_exploit(
                         llm,
-                        service=f.get("service", "unknown"),
-                        version=f.get("version", ""),
-                        cve=f.get("cve", None),
+                        service=service,
+                        version=version,
+                        cve=cve,
+                        rag_context=rag_context,
                     )
                     if exploit_plan.get("commands"):
                         # Create exploit nodes

@@ -195,6 +195,77 @@ def run_subprocess(
     command_str = " ".join(cmd)
     logger.info("Running: %s (timeout=%ds)", command_str, timeout)
 
+    # ── Dry-Run Mock Execution ───────────────────────────────
+    # Dynamically resolve configuration to check if dry_run is enabled
+    try:
+        from agent.config import load_config
+        cfg = load_config()
+        dry_run = cfg.get("safety", {}).get("dry_run", False)
+    except Exception:
+        dry_run = False
+
+    if dry_run:
+        logger.info("[DRY RUN] Intercepted execution of: %s", command_str)
+        # Generate premium mock output depending on the command
+        binary = cmd[0].lower()
+        mock_stdout = ""
+        mock_stderr = ""
+        mock_rc = 0
+
+        if "nmap" in binary:
+            # Check if it is nmap_vuln or standard service scan
+            if "--script" in command_str and "vuln" in command_str:
+                mock_stdout = """<?xml version="1.0"?>
+<nmaprun>
+  <host>
+    <status state="up"/>
+    <address addr="127.0.0.1" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="80">
+        <state state="open"/>
+        <service name="http" product="Apache" version="2.4.49"/>
+        <script id="vuln" output="CVE-2021-41773 Apache RCE vulnerable!"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>"""
+            else:
+                mock_stdout = """<?xml version="1.0"?>
+<nmaprun>
+  <host>
+    <status state="up"/>
+    <address addr="127.0.0.1" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="22">
+        <state state="open"/>
+        <service name="ssh" product="OpenSSH" version="7.6p1"/>
+      </port>
+      <port protocol="tcp" portid="80">
+        <state state="open"/>
+        <service name="http" product="Apache" version="2.4.49"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>"""
+        elif "gobuster" in binary:
+            mock_stdout = """
+/index.html (Status: 200) [Size: 1530]
+/admin (Status: 200) [Size: 450]
+/secret.txt (Status: 200) [Size: 85]
+"""
+        elif "sqlmap" in binary:
+            mock_stdout = "[INFO] GET parameter 'id' is vulnerable to SQL injection (UNION query)"
+        else:
+            mock_stdout = f"[DRY RUN Mock Output] Executed command: {command_str}"
+
+        return ToolResult(
+            command=command_str,
+            raw=mock_stdout,
+            error=None,
+            duration=0.01,
+            return_code=0,
+        )
+
     start = time.time()
     try:
         result = subprocess.run(

@@ -50,3 +50,7 @@ desktop.ini
 
 # Gemini
 .gemini/
+
+# Auto-generated data directories
+data/hacktricks_docs/
+data/test_chroma/

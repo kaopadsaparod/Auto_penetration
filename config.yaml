@@ -6,7 +6,7 @@
 # ============================================================
 
 target:
-  ip: "10.10.10.x"                          # Primary target IP
+  ip: "10.10.10.100"                          # Primary target IP
   allowed_ips: ["10.10.10.0/24"]            # CIDR — agent CANNOT touch IPs outside this
   allowed_ports: [22, 80, 443, 8080, 8443, 3306, 5432, 21, 25, 110, 139, 445, 3389]
 
@@ -16,6 +16,7 @@ budget:
   max_iterations: 15                        # Max ReAct loop cycles
 
 safety:
+  dry_run: true                             # Safe local dry-run intercepts subprocess commands
   require_human_approval: true              # HITL gate for exploit execution
   blocked_commands:                          # Never allow these patterns
     - "rm -rf"
@@ -40,7 +41,7 @@ safety:
   max_subprocess_timeout: 600               # Global timeout cap in seconds
 
 llm:
-  local_model: "qwen3.5:4b"               # Ollama model for parsing/routing (FREE)
+  local_model: "llama3.2:3b"               # Ollama model for parsing/routing (FREE)
   paid_model: "gemini-2.5-flash"            # Google Gemini for strategic reasoning (FREE tier)
   ollama_host: "http://localhost:11434"      # Change to host.docker.internal in Docker
   gemini_api_key_env: "GEMINI_API_KEY"      # Env var name holding your API key
@@ -53,5 +54,6 @@ rag:
 
 report:
   enabled: true
-  output: data/report.html
-  use_gemini: false                          # Use local LLM for summary (FREE)
+  output_html: "./data/report.html"
+  output_pdf: "./data/report.pdf"
+  formats: ["html", "pdf"]

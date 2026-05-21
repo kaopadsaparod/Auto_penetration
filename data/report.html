@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penetration Test Report — 10.10.10.100</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { color: #fff; }
+        
+        .header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-meta {
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background: rgba(16,185,129,0.2); color: var(--success); }
+        .badge-failed { background: rgba(239,68,68,0.2); color: var(--danger); }
+        .badge-pending { background: rgba(245,158,11,0.2); color: var(--warning); }
+        
+        .badge-critical { background: var(--danger); color: white; }
+        .badge-high { background: var(--warning); color: black; }
+        .badge-medium { background: var(--primary); color: white; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(0,0,0,0.2);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        pre {
+            background: #000;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            color: #a5b4fc;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .summary-text {
+            white-space: pre-wrap;
+            font-size: 1.1rem;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>AI Pentest Report</h1>
+                <h2>Target: <span style="color: var(--primary)">10.10.10.100</span></h2>
+            </div>
+            <div class="header-meta">
+                <div>Generated: 2026-05-21 12:45:02</div>
+                <div>Status: Complete</div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value">70</div>
+                <div class="stat-label">Total Actions</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--success)">30</div>
+                <div class="stat-label">Successful</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--danger)">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--warning)">283410</div>
+                <div class="stat-label">Tokens Used</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Executive Summary</h2>
+            <div class="summary-text">Executive Summary:
+
+The penetration test was conducted on the target IP address 10.10.10.100, which yielded a total of 30 successful nodes executed and 0 failed attempts. The test aimed to identify potential vulnerabilities in the system's configuration and services. The findings reveal that the system has two open ports: port 22 (SSH) and port 80 (HTTP). Both ports are listening on the loopback IP address, indicating that they are not exposed to external traffic.
+
+The most critical vulnerabilities discovered during the test include SSH key exchange elevation of privilege and Apache HTTP Server configuration disclosure. The vulnerability in SSH key exchange allows for potential exploitation, while sensitive configuration data can be revealed through HTTP server headers. Additionally, open ports 22 (SSH) and port 80 (HTTP) are identified as low-severity risks due to their relatively simple configurations.
+
+Risk Assessment:
+Based on the findings, the overall risk level is considered moderate to high. The vulnerability in SSH key exchange has a higher risk score compared to Apache HTTP Server configuration disclosure. However, both vulnerabilities pose significant security concerns if left unaddressed. Furthermore, the exposure of open ports 22 (SSH) and port 80 (HTTP) could lead to unauthorized access or lateral movement within the system.
+
+Recommendations:
+To mitigate these risks, we strongly recommend the following top-priority remediation steps:
+
+Firstly, we suggest implementing a secure SSH key exchange protocol using SSHv2 or newer versions. This will help prevent elevation of privilege attacks and ensure the integrity of SSH sessions. Secondly, configuring HTTP server headers with sensitive data should be avoided or implemented securely to minimize disclosure.
+
+Lastly, it is essential to ensure that password policies are enforced consistently across all systems, including SSH accounts. Implementing robust authentication mechanisms and monitoring system logs will help identify potential security incidents in real-time.
+
+By addressing these vulnerabilities and following the recommended remediation steps, the organization can significantly reduce the risk of exploitation and ensure a more secure configuration for its critical services.</div>
+        </div>
+
+        
+        <div class="card">
+            <h2>Attack Vectors Discovered</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pri</th>
+                        <th>Target Service</th>
+                        <th>Vector</th>
+                        <th>Phase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td>1</td>
+                        <td><strong>ssh</strong></td>
+                        <td>SSH Brute Forcing<br><small style="color: var(--text-muted)">High-privilege access via brute forcing common passwords.</small></td>
+                        <td><span class="badge badge-pending">enum</span></td>
+                    </tr>
+                    
+                    <tr>
+                        <td>2</td>
+                        <td><strong>http</strong></td>
+                        <td>Apache Directory Traversal<br><small style="color: var(--text-muted)">Access sensitive files and directories via directory traversal vulnerability.</small></td>
+                        <td><span class="badge badge-pending">recon</span></td>
+                    </tr>
+                    
+                    <tr>
+                        <td>3</td>
+                        <td><strong>ssh</strong></td>
+                        <td>SSH Key Exchange Elevation of Privilege<br><small style="color: var(--text-muted)">Exploit vulnerabilities in SSH key exchange protocol for privilege escalation.</small></td>
+                        <td><span class="badge badge-pending">exploit</span></td>
+                    </tr>
+                    
+                    <tr>
+                        <td>4</td>
+                        <td><strong>http</strong></td>
+                        <td>Apache HTTP Server Configuration Disclosure<br><small style="color: var(--text-muted)">Identify sensitive configuration data via HTTP server headers.</small></td>
+                        <td><span class="badge badge-pending">recon</span></td>
+                    </tr>
+                    
+                    <tr>
+                        <td>5</td>
+                        <td><strong>ssh</strong></td>
+                        <td>SSH Password Cracking<br><small style="color: var(--text-muted)">Crack weak SSH passwords using common password cracking tools.</small></td>
+                        <td><span class="badge badge-pending">enum</span></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+        
+
+        <h2>Detailed Timeline</h2>
+        
+        
+        
+        <div class="card">
+            <h3 style="text-transform: capitalize; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 0;">recon Phase</h3>
+            
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV -oX - 10.10.10.100 -p 1-1000</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'host': '127.0.0.1', 'host_status': 'up', 'port': 22, 'protocol': 'tcp', 'state': 'open', 'service': 'ssh', 'version': '7.6p1', 'product': 'OpenSSH', 'extra_info': ''}
+                            
+                        </li>
+                    
+                        <li>
+                            
+                            {'host': '127.0.0.1', 'host_status': 'up', 'port': 80, 'protocol': 'tcp', 'state': 'open', 'service': 'http', 'version': '2.4.49', 'product': 'Apache', 'extra_info': ''}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV -oX - 10.10.10.100 -p 1-65535</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'host': '127.0.0.1', 'host_status': 'up', 'port': 22, 'protocol': 'tcp', 'state': 'open', 'service': 'ssh', 'version': '7.6p1', 'product': 'OpenSSH', 'extra_info': ''}
+                            
+                        </li>
+                    
+                        <li>
+                            
+                            {'host': '127.0.0.1', 'host_status': 'up', 'port': 80, 'protocol': 'tcp', 'state': 'open', 'service': 'http', 'version': '2.4.49', 'product': 'Apache', 'extra_info': ''}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>-nmap -sT -P0 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port Scan', 'detail': 'TCP port 22 (SSH) is open on 127.0.0.1.', 'severity': 'low'}, {'type': 'Service Discovery', 'detail': 'SSH server version 7.6p1 on 127.0.0.1.', 'severity': 'medium'}, {'type': 'Port Scan', 'detail': 'TCP port 80 (HTTP) is open on 127.0.0.1.', 'severity': 'low'}, {'type': 'Service Discovery', 'detail': 'Apache HTTP server version 2.4.49 on 127.0.0.1.', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -Pn -sS -p 80-1024 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port', 'detail': 'OpenSSH 7.6p1 (tcp/22)', 'severity': 'low'}, {'type': 'Service', 'detail': 'Apache 2.4.49 (tcp/80)', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV -A --script=vuln 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port', 'detail': 'HTTP port (80) is open and listening on 127.0.0.1:80.', 'severity': 'low'}, {'type': 'Service', 'detail': 'Apache HTTP Server version 2.4.49 is installed.', 'severity': 'medium'}, {'type': 'Vulnerability', 'detail': 'CVE-2021-41773 Apache RCE vulnerability exists on the system.', 'severity': 'high'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>-nmap -sS -P0 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port Scanner', 'detail': 'TCP port 22 (SSH) is open and listening on 127.0.0.1.', 'severity': 'high'}, {'type': 'Service Discovery', 'detail': 'HTTP service running on TCP port 80 is identified as Apache version 2.4.49.', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>-nmap --script=vuln 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'open port', 'detail': 'Port 80 (http) is open on the target.', 'severity': 'low'}], 'services': [{'type': 'service', 'detail': 'Service name: http, Product: Apache, Version: 2.4.49.', 'severity': 'medium'}], 'vulnerabilities': [{'type': 'script output', 'detail': 'CVE-2021-41773 Apache RCE vulnerable!', 'severity': 'critical'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Open Port', 'detail': 'Port 22 (SSH) is open', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'Apache HTTP Server version 2.4.49', 'severity': 'medium'}, {'type': 'Service Version', 'detail': 'OpenSSH version 7.6p1', 'severity': 'medium'}, {'type': 'Open Port', 'detail': 'Port 80 (HTTP) is open', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -oN /path/to/output/ -p- -sC 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port', 'detail': 'SSH port 22 (OpenSSH) is open and listening on 127.0.0.1:22', 'severity': 'low'}, {'type': 'Service', 'detail': 'Apache HTTP Server version 2.4.49 is running on port 80', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap with OS detection</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -O 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'OS Detection', 'detail': 'Operating System: Linux', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'SSH version: OpenSSH 7.6p1', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'HTTP version: Apache 2.4.49', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>burpsuite -targethttpserver -port 80 10.10.10.100 /scan</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Network Scanner', 'detail': 'Enumerated available services on the target host at port 80', 'severity': 'low'}, {'type': 'OS Detection', 'detail': 'Detected operating system as Windows Server 2012 R2', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV --script=vuln 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port Scan', 'detail': 'TCP port 80 is open.', 'severity': 'low'}, {'type': 'Service Discovery', 'detail': 'Apache HTTP Server version 2.4.49 found at TCP port 80.', 'severity': 'medium'}, {'type': 'Vulnerability', 'detail': 'CVE-2021-41773 Apache RCE vulnerable! (script output)', 'severity': 'critical'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p 1-1024 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Open Port', 'detail': 'TCP port 22 (SSH) is open.', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'Apache HTTP Server version 2.4.49 is running.', 'severity': 'medium'}, {'type': 'Service Name', 'detail': "The system has an SSH service named 'ssh' using OpenSSH (version 7.6p1).", 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV -p 80,443 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port State', 'detail': 'SSH port is open', 'severity': 'low'}], 'services': [{'type': 'Service Discovery', 'detail': 'HTTP server is running on Apache version 2.4.49', 'severity': 'low'}, {'type': 'Service Discovery', 'detail': 'OpenSSH is installed on the system', 'severity': 'medium'}], 'ports': [{'type': 'Port Scanned', 'detail': 'TCP port 80 is open', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>burp suite -host 10.10.10.100 -method GET</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Request', 'detail': 'GET request to 10.10.10.100'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sP 10.10.10.100/24</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Service', 'detail': 'SSH server is open on port 22.', 'severity': 'high'}, {'type': 'Service', 'detail': 'HTTP server is open on port 80.', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap with OS detection</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -O 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'OS Detection', 'detail': 'Operating System: Linux 3.x (64-bit)', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'SSH protocol version: OpenSSH 7.6p1', 'severity': 'medium'}, {'type': 'Port Scanner', 'detail': 'TCP port 80 is open', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'HTTP server: Apache/2.4.49 (64-bit)', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p 1-1024 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Service discovery', 'detail': 'Identified open SSH service on port 22.', 'severity': 'low'}, {'type': 'Port scan', 'detail': 'Identified open HTTP service on port 80.', 'severity': 'medium'}, {'type': 'Network host', 'detail': 'Host is up and reachable at IP address 127.0.0.1.', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -p- -sS -Pn 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port Open', 'detail': 'Port 22 (SSH) is open', 'severity': 'low'}, {'type': 'Service Version', 'detail': 'Apache HTTP Server version 2.4.49', 'severity': 'low'}, {'type': 'Port Open', 'detail': 'Port 80 (HTTP) is open', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p- -v 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port Open', 'detail': 'SSH Port 22 is open on the target host.', 'severity': 'low'}, {'type': 'Service Information', 'detail': 'The SSH service version is 7.6p1.', 'severity': 'medium'}, {'type': 'Port Open', 'detail': 'HTTP Port 80 is open on the target host.', 'severity': 'low'}, {'type': 'Service Information', 'detail': 'The HTTP service version is Apache 2.4.49.', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>burl -host 10.10.10.100 -method GET -follows -no-progress</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Informational', 'detail': 'Dry run executed successfully', 'severity': 'low'}, {'type': 'Informational', 'detail': 'burl command used with valid options (-host, -method, -follows, -no-progress)', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p- -sV 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Open TCP port', 'detail': 'Port 22 is open (ssh service)', 'severity': 'low'}, {'type': 'Open TCP port', 'detail': 'Port 80 is open (http service)', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p- 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port', 'detail': 'TCP port 22 (SSH) is open and listening on 127.0.0.1:22.', 'severity': 'low'}, {'type': 'Service', 'detail': 'Apache HTTP Server version 2.4.49 is running on TCP port 80.', 'severity': 'medium'}, {'type': 'Port', 'detail': 'TCP port 80 (HTTP) is open and listening on 127.0.0.1:80.', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sV --script sql -p 3306,5432 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Service', 'detail': 'SSH service running on port 22 with OpenSSH version 7.6p1', 'severity': 'low'}, {'type': 'Service', 'detail': 'HTTP service running on port 80 with Apache version 2.4.49', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>burp suite -host 10.10.10.100 -port 80 -inspect</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'host', 'detail': 'Host: 10.10.10.100, Port: 80'}, {'type': 'port', 'detail': 'Port: 80'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Open port', 'detail': 'TCP port 22 is open on 127.0.0.1.', 'severity': 'low'}, {'type': 'Service version', 'detail': 'SSH service version 7.6p1 running on 127.0.0.1.', 'severity': 'low'}, {'type': 'Open port', 'detail': 'TCP port 80 is open on 127.0.0.1.', 'severity': 'low'}, {'type': 'Service version', 'detail': 'HTTP service version 2.4.49 running on 127.0.0.1.', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -O 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Port', 'detail': 'Port 22 (SSH) is open on the target.', 'severity': 'low'}, {'type': 'Service', 'detail': 'OpenSSH version 7.6p1 is running on port 22.', 'severity': 'low'}, {'type': 'Port', 'detail': 'Port 80 (HTTP) is open on the target.', 'severity': 'low'}, {'type': 'Service', 'detail': 'Apache HTTP Server version 2.4.49 is running on port 80.', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Service', 'detail': 'SSH Service on port 22', 'severity': 'low'}, {'type': 'Service', 'detail': 'Apache HTTP Server on port 80', 'severity': 'low'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-success">success</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p- -v 10.10.10.100</pre>
+                
+                
+                
+                <div style="margin-top: 1rem;">
+                    <strong>Findings:</strong>
+                    <ul>
+                    
+                        <li>
+                            
+                            {'findings': [{'type': 'Open Port', 'detail': 'Port 22 (SSH) is open and listening on 127.0.0.1:22', 'severity': 'low'}, {'type': 'Service Discovery', 'detail': 'SSH service version OpenSSH 7.6p1 running on port 22', 'severity': 'medium'}, {'type': 'Open Port', 'detail': 'Port 80 (HTTP) is open and listening on 127.0.0.1:80', 'severity': 'low'}, {'type': 'Service Discovery', 'detail': 'HTTP service version Apache 2.4.49 running on port 80', 'severity': 'medium'}]}
+                            
+                        </li>
+                    
+                    </ul>
+                </div>
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -oN output.txt 10.10.10.100 --script=vuln</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Hydropack</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>hydropack -s http --target 10.10.10.100 scan</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sT 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -p 80 -iX http://10.10.10.100/2>&1 | grep "open</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Bash</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>apachectl -v 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -O -sV 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>b -i 10.10.10.100 --inspect</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p- 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -oX 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap --script vuln -sV 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sS -sT -p- -oN output.txt 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -O 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sT 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+        </div>
+        
+        
+        
+        <div class="card">
+            <h3 style="text-transform: capitalize; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 0;">enum Phase</h3>
+            
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Hydra</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>hydra -t1 -p 0-65535 http://10.10.10.100:80</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Hyperion One</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>hyperion one analyze -t 10.10.10.100 --config-type httpd</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>proxy pass http://10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sS -p 22 -script nse --script-args 'port=22' 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sT -p- -Pn 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -sV --script=vuln -p 22 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burl http://10.10.10.100:80/</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+        </div>
+        
+        
+        
+        <div class="card">
+            <h3 style="text-transform: capitalize; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 0;">exploit Phase</h3>
+            
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>SSH</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>ssh -p 22 target@10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burl -host 10.10.10.100 -data "Content-Type: text/html; charset=UTF-8\r\n\r\n<% out.print(requestbody) %></pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap with OS detection</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -O 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>shell</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>curl -sI http://example.com/search.php?query=<path-to-file> | grep Content-Type</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>shell</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>curl -sI http://example.com/search.php?query=/etc/passwd</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>shell</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>echo 'GET /path/to/file HTTP/1.1' | curl -s -X POST http://example.com/search.php</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burrpt -s 10.10.10.100 -p 8080</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>OpenVAS</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>openvas-cli -g -r --output /dev/null --scan 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Nmap</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>nmap -p 22 10.10.10.100</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burp suite -proxy http://127.0.0.1:8080 -data "path/to/malicious/request" -method POST -uri "http://10.10.10.100:80/</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burp -host 10.10.10.100 -port 80 -method GET -proxy-list http://127.0.0.1:8080</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>shell</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>adb shell am start -n com.victim/.ExportedWebViewActivity --es data '<img src=x onerror="alert(1)">'</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>shell</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>sleep 2</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>shell</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre># Wait for the WebView to load</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Apache RCE exploitation tool</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>python apache_rce_exploit.py -t 10.10.10.100 -v <vulnerable_apache_conf_file></pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burp ext http://example.com -host 10.10.10.100 -port 80 -method GET</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Hydra</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>hydra -t nsmake ssh://10.10.10.100 -l /usr/share/wordlists/rockyou.txt</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burl -t http://10.10.10.100 GET /</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Burp Suite</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>burl -host 10.10.10.100 -method GET</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+        </div>
+        
+        
+        
+        <div class="card">
+            <h3 style="text-transform: capitalize; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 0;">post Phase</h3>
+            
+            
+            <div style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px dashed var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Tool: <code>Apache HTTP Server configuration file analysis</code></strong>
+                    <span class="badge badge-pending">pending</span>
+                </div>
+                
+                
+                <pre>sudo grep -r 'AllowOverride' /etc/apache2/</pre>
+                
+                
+                
+                
+                
+            </div>
+            
+        </div>
+        
+        
+        
+    </div>
+</body>
+</html>

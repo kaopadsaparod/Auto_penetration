@@ -126,7 +126,14 @@ class PTTStore:
     (findings, next_hypotheses) are stored as JSON strings.
     """
 
-    def __init__(self, db_path: str = "./data/ptt.db"):
+    def __init__(self, db_path: Optional[str] = None, target_ip: Optional[str] = None):
+        if db_path is None:
+            if target_ip:
+                safe_ip = target_ip.replace(".", "_").replace(":", "_").replace("/", "_")
+                db_path = f"./data/ptt_{safe_ip}.db"
+            else:
+                db_path = "./data/ptt.db"
+
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
